@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
+import { AuthService, User } from '../../services/auth.service';
 import { EventService } from '../../services/event.service';
 
 interface UserEvent {
@@ -22,8 +22,10 @@ interface UserEvent {
   styleUrl: './dashboard.scss',
 })
 export class Dashboard implements OnInit {
+  currentUser: User | null = null;
   userName = 'Usuário';
   userEmail = '';
+  userRole = '';
   events: UserEvent[] = [];
   isLoading = true;
   errorMessage = '';
@@ -31,7 +33,8 @@ export class Dashboard implements OnInit {
   constructor(
     private authService: AuthService,
     private eventService: EventService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -40,27 +43,50 @@ export class Dashboard implements OnInit {
   }
 
   loadUserData(): void {
-    const token = this.authService.getToken();
-    if (token) {
-      this.userName = 'João Silva';
-      this.userEmail = 'joao.silva@church.com';
+    this.currentUser = this.authService.getUser();
+    if (this.currentUser) {
+      this.userName = this.currentUser.name;
+      this.userEmail = this.currentUser.email;
+      this.userRole = this.currentUser.role;
+      console.log('Dados do usuário carregados:', this.currentUser);
+    } else {
+      console.warn('Nenhum dado de usuário encontrado no localStorage');
+      this.router.navigate(['/login']);
     }
   }
 
   loadUserEvents(): void {
+    if (!this.currentUser || !this.currentUser.id) {
+      console.error('ID do usuário não encontrado');
+      this.errorMessage = 'Erro: ID do usuário não encontrado.';
+      this.isLoading = false;
+      return;
+    }
+
+    console.log('🔄 Iniciando carregamento - isLoading:', this.isLoading);
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.eventService.getUserEvents().subscribe({
+    this.eventService.getUserEvents(this.currentUser.id).subscribe({
       next: (events: any) => {
+        console.log('✅ Eventos recebidos:', events);
+        console.log('📊 Total:', events.length);
         this.events = events as UserEvent[];
+        console.log('⏳ Setando isLoading = false');
         this.isLoading = false;
+        console.log('🔍 isLoading agora é:', this.isLoading);
+        this.cdr.detectChanges();
+        console.log('🔄 detectChanges() chamado');
       },
       error: (error: any) => {
-        this.errorMessage = 'Erro ao carregar eventos. Tente novamente.';
+        console.error('❌ Erro ao carregar eventos:', error);
+        this.errorMessage = error.message || 'Erro ao carregar eventos. Tente novamente.';
         this.isLoading = false;
-        console.error('Erro ao carregar eventos:', error);
+        this.cdr.detectChanges();
       },
+      complete: () => {
+        console.log('🏁 Requisição finalizada - isLoading:', this.isLoading);
+      }
     });
   }
 
@@ -104,7 +130,6 @@ export class Dashboard implements OnInit {
     });
   }
 
-  // Métodos auxiliares para filtros de eventos
   getConfirmedEventsCount(): number {
     return this.events.filter((event) => event.status === 'confirmado').length;
   }

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -11,7 +11,7 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
-export class Login {
+export class Login implements OnInit {
   loginForm: FormGroup;
   isLoading = false;
   errorMessage = '';
@@ -27,6 +27,13 @@ export class Login {
     });
   }
 
+  ngOnInit(): void {
+    if (this.authService.isAuthenticated()) {
+      console.log('Usuário já autenticado, redirecionando para dashboard');
+      this.router.navigate(['/dashboard']);
+    }
+  }
+
   onSubmit(): void {
     if (this.loginForm.valid) {
       this.isLoading = true;
@@ -37,12 +44,24 @@ export class Login {
       this.authService.login(email, password).subscribe({
         next: (response) => {
           this.isLoading = false;
-          console.log('Login bem-sucedido', response);
+          console.log('Login bem-sucedido');
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {
           this.isLoading = false;
-          this.errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
+
+          if (error.status === 401) {
+            this.errorMessage = 'Email ou senha incorretos. Por favor, tente novamente.';
+          } else if (error.status === 404 || error.status === 0) {
+            this.errorMessage = 'Não foi possível conectar ao servidor. Verifique se ele está rodando em http://localhost:8080';
+          } else if (error.status === 400) {
+            this.errorMessage = 'Dados inválidos. Verifique os campos e tente novamente.';
+          } else if (error.status === 500) {
+            this.errorMessage = 'Erro interno do servidor. Tente novamente mais tarde.';
+          } else {
+            this.errorMessage = error.message || 'Erro ao fazer login. Por favor, tente novamente.';
+          }
+
           console.error('Erro no login:', error);
         }
       });

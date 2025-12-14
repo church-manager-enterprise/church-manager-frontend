@@ -1,7 +1,38 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+
+export interface Participant {
+  id: string;
+  memberId: string;
+  role: string;
+  registeredAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Organizer {
+  id: string;
+  memberId: string;
+  role: string;
+  assignedAt: string;
+}
+
+export interface EventResponse {
+  id: string;
+  churchId: string;
+  name: string;
+  description: string;
+  startDatetime: string;
+  endDatetime: string;
+  location: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  participants: Participant[];
+  organizers: Organizer[];
+}
 
 export interface Event {
   id: string;
@@ -17,118 +48,112 @@ export interface Event {
   providedIn: 'root',
 })
 export class EventService {
-  private apiUrl = ''; //TODO:  ADD MS Events URL
+  private apiUrl = 'http://localhost:8080/api';
 
   constructor(private http: HttpClient) {}
-  getUserEvents(): Observable<Event[]> {
-    if (!this.apiUrl) {
-      return this.simulateUserEvents();
-    }
-
+  getUserEvents(userId: string): Observable<Event[]> {
+    console.log('🌐 EventService.getUserEvents chamado com userId:', userId);
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const url = `${this.apiUrl}/events/user/${userId}`;
+    console.log('🔗 URL completa:', url);
 
-    return this.http.get<Event[]>(`${this.apiUrl}/events/user`, { headers });
+    return this.http.get<EventResponse[]>(url, { headers }).pipe(
+      map((events: EventResponse[]) => {
+        console.log('📦 Resposta recebida do backend:', events);
+        const mapped = this.mapEventsToUI(events);
+        console.log('🔄 Eventos mapeados para UI:', mapped);
+        return mapped;
+      }),
+      catchError((error) => {
+        console.error('💥 Erro capturado no EventService:', error);
+        return this.handleError(error);
+      })
+    );
   }
 
   getAllEvents(): Observable<Event[]> {
-    if (!this.apiUrl) {
-      return this.simulateUserEvents();
-    }
-
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.get<Event[]>(`${this.apiUrl}/events`, { headers });
+    return this.http.get<EventResponse[]>(`${this.apiUrl}/events`, { headers }).pipe(
+      map((events: EventResponse[]) => this.mapEventsToUI(events)),
+      catchError(this.handleError)
+    );
   }
 
   getEventById(id: string): Observable<Event> {
-    if (!this.apiUrl) {
-      return this.simulateEventById(id);
-    }
-
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.get<Event>(`${this.apiUrl}/events/${id}`, { headers });
+    return this.http.get<EventResponse>(`${this.apiUrl}/events/${id}`, { headers }).pipe(
+      map((event: EventResponse) => this.mapEventToUI(event)),
+      catchError(this.handleError)
+    );
   }
 
   confirmAttendance(eventId: string): Observable<any> {
-    if (!this.apiUrl) {
-      return of({ success: true, message: 'Presença confirmada' }).pipe(delay(500));
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http
+      .post(`${this.apiUrl}/events/${eventId}/confirm`, {}, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  private mapEventsToUI(events: EventResponse[]): Event[] {
+    return events.map((event) => this.mapEventToUI(event));
+  }
+
+  private mapEventToUI(event: EventResponse): Event {
+    return {
+      id: event.id,
+      title: event.name,
+      description: event.description,
+      date: event.startDatetime,
+      location: event.location,
+      participants: event.participants.length,
+      status: this.determineEventStatus(event.startDatetime),
+    };
+  }
+
+  private determineEventStatus(startDatetime: string): 'confirmado' | 'pendente' | 'cancelado' {
+    const eventDate = new Date(startDatetime);
+    const now = new Date();
+    const daysDiff = Math.floor((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysDiff < 0) {
+      return 'confirmado';
+    } else if (daysDiff <= 7) {
+      return 'confirmado';
+    } else {
+      return 'pendente';
+    }
+  }
+
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    let errorMessage = 'Erro ao carregar eventos.';
+
+    if (error.error instanceof ErrorEvent) {
+      errorMessage = `Erro: ${error.error.message}`;
+    } else {
+      switch (error.status) {
+        case 404:
+          errorMessage = 'Eventos não encontrados.';
+          break;
+        case 401:
+          errorMessage = 'Não autorizado. Faça login novamente.';
+          break;
+        case 500:
+          errorMessage = 'Erro no servidor. Tente novamente mais tarde.';
+          break;
+        case 0:
+          errorMessage = 'Não foi possível conectar ao servidor.';
+          break;
+        default:
+          errorMessage = error.error?.message || 'Erro ao processar requisição.';
+      }
     }
 
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post(`${this.apiUrl}/events/${eventId}/confirm`, {}, { headers });
-  }
+    console.error('Erro ao buscar eventos:', {
+      status: error.status,
+      message: errorMessage,
+      error: error,
+    });
 
-  private simulateUserEvents(): Observable<Event[]> {
-    const mockEvents: Event[] = [
-      {
-        id: '1',
-        title: 'Culto de Celebração',
-        description: 'Culto especial de celebração com louvor e pregação da palavra.',
-        date: '2025-12-01T10:00:00',
-        location: 'Templo Principal',
-        participants: 150,
-        status: 'confirmado',
-      },
-      {
-        id: '2',
-        title: 'Reunião de Oração',
-        description: 'Momento de oração e intercessão pela igreja e comunidade.',
-        date: '2025-12-05T19:00:00',
-        location: 'Sala de Oração',
-        participants: 45,
-        status: 'confirmado',
-      },
-      {
-        id: '3',
-        title: 'Escola Bíblica Dominical',
-        description: 'Estudo aprofundado das escrituras para todas as idades.',
-        date: '2025-12-08T09:00:00',
-        location: 'Salas de Aula',
-        participants: 80,
-        status: 'pendente',
-      },
-      {
-        id: '4',
-        title: 'Encontro de Jovens',
-        description: 'Reunião especial para jovens com atividades e dinâmicas.',
-        date: '2025-12-12T18:00:00',
-        location: 'Salão de Eventos',
-        participants: 120,
-        status: 'pendente',
-      },
-      {
-        id: '5',
-        title: 'Retiro Espiritual',
-        description: 'Fim de semana de retiro espiritual e renovação.',
-        date: '2025-12-15T08:00:00',
-        location: 'Chácara Santa Cruz',
-        participants: 60,
-        status: 'confirmado',
-      },
-      {
-        id: '6',
-        title: 'Natal na Igreja',
-        description: 'Celebração especial de Natal com apresentações e confraternização.',
-        date: '2025-12-24T19:00:00',
-        location: 'Templo Principal',
-        participants: 250,
-        status: 'pendente',
-      },
-    ];
-
-    return of(mockEvents).pipe(delay(1000));
-  }
-
-  private simulateEventById(id: string): Observable<Event> {
-    const mockEvent: Event = {
-      id: id,
-      title: 'Evento Exemplo',
-      description: 'Descrição do evento',
-      date: '2025-12-01T10:00:00',
-      location: 'Local do Evento',
-      participants: 100,
-      status: 'confirmado',
-    };
-
-    return of(mockEvent).pipe(delay(500));
+    return throwError(() => ({ status: error.status, message: errorMessage }));
   }
 }
