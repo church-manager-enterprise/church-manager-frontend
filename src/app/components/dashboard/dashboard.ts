@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { AuthService, User } from '../../services/auth.service';
 import { EventService } from '../../services/event.service';
 
-interface UserEvent {
+interface Event {
   id: string;
   title: string;
   description: string;
@@ -26,7 +26,7 @@ export class Dashboard implements OnInit {
   userName = 'Usuário';
   userEmail = '';
   userRole = '';
-  events: UserEvent[] = [];
+  events: Event[] = [];
   isLoading = true;
   errorMessage = '';
 
@@ -63,30 +63,26 @@ export class Dashboard implements OnInit {
       return;
     }
 
-    console.log('🔄 Iniciando carregamento - isLoading:', this.isLoading);
     this.isLoading = true;
     this.errorMessage = '';
 
     this.eventService.getUserEvents(this.currentUser.id).subscribe({
       next: (events: any) => {
-        console.log('✅ Eventos recebidos:', events);
-        console.log('📊 Total:', events.length);
-        this.events = events as UserEvent[];
-        console.log('⏳ Setando isLoading = false');
+        this.events = events as Event[];
         this.isLoading = false;
-        console.log('🔍 isLoading agora é:', this.isLoading);
         this.cdr.detectChanges();
-        console.log('🔄 detectChanges() chamado');
       },
       error: (error: any) => {
         console.error('❌ Erro ao carregar eventos:', error);
+        console.error('Status do erro:', error.status);
+        console.error('Mensagem do erro:', error.message);
         this.errorMessage = error.message || 'Erro ao carregar eventos. Tente novamente.';
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       complete: () => {
-        console.log('🏁 Requisição finalizada - isLoading:', this.isLoading);
-      }
+        console.log('🏁 Requisição de eventos finalizada');
+      },
     });
   }
 

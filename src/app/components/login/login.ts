@@ -29,8 +29,14 @@ export class Login implements OnInit {
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
-      console.log('Usuário já autenticado, redirecionando para dashboard');
-      this.router.navigate(['/dashboard']);
+      const user = this.authService.getUser();
+      console.log('Usuário já autenticado:', user);
+
+      if (user?.role === 'ADMIN') {
+        this.router.navigate(['/admin']);
+      } else {
+        this.router.navigate(['/dashboard']);
+      }
     }
   }
 
@@ -45,7 +51,16 @@ export class Login implements OnInit {
         next: (response) => {
           this.isLoading = false;
           console.log('Login bem-sucedido');
-          this.router.navigate(['/dashboard']);
+
+          // Redirecionar baseado no role do usuário
+          const user = this.authService.getUser();
+          if (user?.role === 'ADMIN') {
+            console.log('Redirecionando para painel de administração');
+            this.router.navigate(['/admin']);
+          } else {
+            console.log('Redirecionando para dashboard de usuário');
+            this.router.navigate(['/dashboard']);
+          }
         },
         error: (error) => {
           this.isLoading = false;

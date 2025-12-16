@@ -1,0 +1,261 @@
+<div class="admin-page">
+  <header class="admin-header">
+    <div class="header-content">
+      <div class="header-left">
+        <div class="logo">
+          <img src="assets/church.ico" alt="Church Manager Logo" />
+          <span class="logo-text">
+            <span class="church">CHURCH</span> <span class="manager">MANAGER</span>
+          </span>
+        </div>
+        <span class="admin-badge">ADMINISTRADOR</span>
+      </div>
+      <div class="header-right">
+        <div class="user-info">
+          <div class="user-avatar">
+            <span>{{ userName.charAt(0).toUpperCase() }}</span>
+          </div>
+          <div class="user-details">
+            <span class="user-name">{{ userName }}</span>
+            <span class="user-email">{{ userEmail }}</span>
+          </div>
+        </div>
+        <button class="btn-logout" (click)="onLogout()">
+          <span>Sair</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="admin-content">
+    <div class="container">
+      <!-- Welcome Section -->
+      <section class="welcome-section">
+        <h1 class="page-title">Painel de Administração 🛡️</h1>
+        <p class="page-subtitle">Gerencie todos os eventos da igreja</p>
+      </section>
+
+      <!-- Events Section -->
+      <section class="events-section">
+        <div class="section-header">
+          <h2 class="section-title">Todos os Eventos</h2>
+          <div class="section-actions">
+            <button class="btn-create" (click)="openCreateModal()">
+              <span>➕ Criar Novo Evento</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        @if (isLoading) {
+        <div class="loading-container">
+          <div class="loading-spinner-large"></div>
+          <p>Carregando eventos...</p>
+        </div>
+        }
+
+        <!-- Error State -->
+        @if (errorMessage && !isLoading) {
+        <div class="error-container">
+          <div class="error-icon">⚠️</div>
+          <p class="error-text">{{ errorMessage }}</p>
+          <button class="btn-retry" (click)="loadAllEvents()">Tentar Novamente</button>
+        </div>
+        }
+
+        <!-- Empty State -->
+        @if (!isLoading && !errorMessage && events.length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">📅</div>
+          <h3 class="empty-title">Nenhum evento cadastrado</h3>
+          <p class="empty-text">Clique em "Criar Novo Evento" para adicionar o primeiro evento.</p>
+        </div>
+        }
+
+        <!-- Events Grid -->
+        @if (!isLoading && !errorMessage && events.length > 0) {
+        <div class="events-grid">
+          @for (event of events; track event.id) {
+          <div class="event-card">
+            <div class="event-header">
+              <div class="event-date-badge">
+                <span class="day">{{ formatDate(event.date).split(' ')[0] }}</span>
+                <span class="month">{{ formatDate(event.date).split(' ')[2] }}</span>
+              </div>
+              <div class="event-status" [ngClass]="getEventStatusClass(event.status)">
+                {{ getEventStatusText(event.status) }}
+              </div>
+            </div>
+
+            <div class="event-body">
+              <h3 class="event-title">{{ event.title }}</h3>
+              <p class="event-description">{{ event.description }}</p>
+
+              <div class="event-details">
+                <div class="event-detail">
+                  <span class="detail-icon">📍</span>
+                  <span class="detail-text">{{ event.location }}</span>
+                </div>
+                <div class="event-detail">
+                  <span class="detail-icon">🕐</span>
+                  <span class="detail-text">{{ formatTime(event.date) }}</span>
+                </div>
+                <div class="event-detail">
+                  <span class="detail-icon">👥</span>
+                  <span class="detail-text">{{ event.participants }} participantes</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="event-footer">
+              <button class="btn-event-edit">✏️ Editar</button>
+              <button class="btn-event-delete">🗑️ Excluir</button>
+            </div>
+          </div>
+          }
+        </div>
+        }
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Modal Criar Evento -->
+  @if (showCreateModal) {
+  <div class="modal-overlay" (click)="closeCreateModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">➕ Criar Novo Evento</h2>
+        <button class="btn-close-modal" (click)="closeCreateModal()">✕</button>
+      </div>
+
+      <form [formGroup]="createEventForm" (ngSubmit)="onSubmitCreate()" class="modal-body">
+        <!-- Success Message -->
+        @if (successMessage) {
+        <div class="success-message">
+          ✅ {{ successMessage }}
+        </div>
+        }
+
+        <!-- Error Message -->
+        @if (errorMessage) {
+        <div class="error-message">
+          ❌ {{ errorMessage }}
+        </div>
+        }
+
+        <!-- Nome do Evento -->
+        <div class="form-group">
+          <label for="name" class="form-label">Nome do Evento *</label>
+          <input
+            type="text"
+            id="name"
+            formControlName="name"
+            class="form-input"
+            placeholder="Ex: Culto Dominical"
+            [class.input-error]="name?.invalid && name?.touched"
+          />
+          @if (name?.invalid && name?.touched) {
+          <span class="error-text">
+            @if (name?.errors?.['required']) { Nome é obrigatório }
+            @if (name?.errors?.['minlength']) { Nome deve ter no mínimo 3 caracteres }
+          </span>
+          }
+        </div>
+
+        <!-- Descrição -->
+        <div class="form-group">
+          <label for="description" class="form-label">Descrição *</label>
+          <textarea
+            id="description"
+            formControlName="description"
+            class="form-textarea"
+            placeholder="Descreva o evento..."
+            rows="3"
+            [class.input-error]="description?.invalid && description?.touched"
+          ></textarea>
+          @if (description?.invalid && description?.touched) {
+          <span class="error-text">
+            @if (description?.errors?.['required']) { Descrição é obrigatória }
+            @if (description?.errors?.['minlength']) { Descrição deve ter no mínimo 10 caracteres }
+          </span>
+          }
+        </div>
+
+        <!-- Data/Hora Início -->
+        <div class="form-group">
+          <label for="startDatetime" class="form-label">Data/Hora de Início *</label>
+          <input
+            type="datetime-local"
+            id="startDatetime"
+            formControlName="startDatetime"
+            class="form-input"
+            [class.input-error]="startDatetime?.invalid && startDatetime?.touched"
+          />
+          @if (startDatetime?.invalid && startDatetime?.touched) {
+          <span class="error-text">Data/hora de início é obrigatória</span>
+          }
+        </div>
+
+        <!-- Data/Hora Fim -->
+        <div class="form-group">
+          <label for="endDatetime" class="form-label">Data/Hora de Término *</label>
+          <input
+            type="datetime-local"
+            id="endDatetime"
+            formControlName="endDatetime"
+            class="form-input"
+            [class.input-error]="endDatetime?.invalid && endDatetime?.touched"
+          />
+          @if (endDatetime?.invalid && endDatetime?.touched) {
+          <span class="error-text">Data/hora de término é obrigatória</span>
+          }
+        </div>
+
+        <!-- Local -->
+        <div class="form-group">
+          <label for="location" class="form-label">Local *</label>
+          <input
+            type="text"
+            id="location"
+            formControlName="location"
+            class="form-input"
+            placeholder="Ex: Igreja Central"
+            [class.input-error]="location?.invalid && location?.touched"
+          />
+          @if (location?.invalid && location?.touched) {
+          <span class="error-text">Local é obrigatório</span>
+          }
+        </div>
+
+        <!-- Church ID (hidden) -->
+        <input type="hidden" formControlName="churchId" />
+        <input type="hidden" formControlName="createdBy" />
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn-cancel"
+            (click)="closeCreateModal()"
+            [disabled]="isSubmitting"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="btn-submit"
+            [disabled]="isSubmitting || createEventForm.invalid"
+          >
+            @if (isSubmitting) {
+              <span>Criando...</span>
+            } @else {
+              <span>Criar Evento</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  }
+</div>

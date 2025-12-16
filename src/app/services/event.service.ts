@@ -94,6 +94,24 @@ export class EventService {
       .pipe(catchError(this.handleError));
   }
 
+  createEvent(eventData: any): Observable<EventResponse> {
+    console.log('🌐 EventService.createEvent chamado com:', eventData);
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const url = `${this.apiUrl}/events`;
+    console.log('🔗 URL completa:', url);
+
+    return this.http.post<EventResponse>(url, eventData, { headers }).pipe(
+      map((response: EventResponse) => {
+        console.log('✅ Evento criado com sucesso:', response);
+        return response;
+      }),
+      catchError((error) => {
+        console.error('💥 Erro ao criar evento:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
   private mapEventsToUI(events: EventResponse[]): Event[] {
     return events.map((event) => this.mapEventToUI(event));
   }
