@@ -52,31 +52,30 @@ export class EventService {
 
   constructor(private http: HttpClient) {}
   getUserEvents(userId: string): Observable<Event[]> {
-    console.log('🌐 EventService.getUserEvents chamado com userId:', userId);
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const url = `${this.apiUrl}/events/user/${userId}`;
-    console.log('🔗 URL completa:', url);
 
     return this.http.get<EventResponse[]>(url, { headers }).pipe(
       map((events: EventResponse[]) => {
-        console.log('📦 Resposta recebida do backend:', events);
+        console.log('resposta eventService:', events);
         const mapped = this.mapEventsToUI(events);
-        console.log('🔄 Eventos mapeados para UI:', mapped);
         return mapped;
       }),
       catchError((error) => {
-        console.error('💥 Erro capturado no EventService:', error);
+        console.error('erro no EventService:', error);
         return this.handleError(error);
       })
     );
   }
 
-  getAllEvents(): Observable<Event[]> {
+  getAllChurchEvents(churchId: string): Observable<Event[]> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.get<EventResponse[]>(`${this.apiUrl}/events`, { headers }).pipe(
-      map((events: EventResponse[]) => this.mapEventsToUI(events)),
-      catchError(this.handleError)
-    );
+    return this.http
+      .get<EventResponse[]>(`${this.apiUrl}/events`, { headers, params: { churchId } })
+      .pipe(
+        map((events: EventResponse[]) => this.mapEventsToUI(events)),
+        catchError(this.handleError)
+      );
   }
 
   getEventById(id: string): Observable<Event> {
@@ -93,20 +92,19 @@ export class EventService {
       .post(`${this.apiUrl}/events/${eventId}/confirm`, {}, { headers })
       .pipe(catchError(this.handleError));
   }
-
   createEvent(eventData: any): Observable<EventResponse> {
-    console.log('🌐 EventService.createEvent chamado com:', eventData);
+    console.log('EventService.createEvent chamado com:', eventData);
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const url = `${this.apiUrl}/events`;
-    console.log('🔗 URL completa:', url);
+    console.log('URL completa:', url);
 
     return this.http.post<EventResponse>(url, eventData, { headers }).pipe(
       map((response: EventResponse) => {
-        console.log('✅ Evento criado com sucesso:', response);
+        console.log('Evento criado com sucesso:', response);
         return response;
       }),
       catchError((error) => {
-        console.error('💥 Erro ao criar evento:', error);
+        console.error('Erro ao criar evento:', error);
         return this.handleError(error);
       })
     );

@@ -32,19 +32,18 @@ export class Admin implements OnInit {
     private cdr: ChangeDetectorRef
   ) {
     this.createEventForm = this.fb.group({
-      churchId: ['church-1', Validators.required],
+      churchId: ['', Validators.required],
       name: ['', [Validators.required, Validators.minLength(3)]],
       description: ['', [Validators.required, Validators.minLength(10)]],
       startDatetime: ['', Validators.required],
       endDatetime: ['', Validators.required],
       location: ['', Validators.required],
-      createdBy: ['admin', Validators.required],
+      createdBy: ['', Validators.required],
     });
   }
 
   ngOnInit(): void {
     this.loadUserData();
-    this.loadAllEvents();
   }
 
   loadUserData(): void {
@@ -60,6 +59,8 @@ export class Admin implements OnInit {
       }
 
       console.log('Dados do admin carregados:', this.currentUser);
+
+      this.loadAllEvents();
     } else {
       console.warn('Nenhum dado de usuário encontrado');
       this.router.navigate(['/login']);
@@ -67,32 +68,23 @@ export class Admin implements OnInit {
   }
 
   loadAllEvents(): void {
-    if (!this.currentUser || !this.currentUser.id) {
-      console.error('ID do usuário não encontrado');
-      this.errorMessage = 'Erro: ID do usuário não encontrado.';
-      this.isLoading = false;
-      return;
-    }
     this.isLoading = true;
     this.errorMessage = '';
 
     console.log('🔄 Carregando todos os eventos...');
-    this.eventService.getUserEvents(this.currentUser.id).subscribe({
+
+    this.eventService.getAllChurchEvents(this.currentUser?.churchId || '').subscribe({
       next: (events: any) => {
+        console.log('Eventos carregados:', events);
         this.events = events as Event[];
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: (error: any) => {
-        console.error('❌ Erro ao carregar eventos:', error);
-        console.error('Status do erro:', error.status);
-        console.error('Mensagem do erro:', error.message);
+        console.error('erro ao carregar eventos:', error);
         this.errorMessage = error.message || 'Erro ao carregar eventos. Tente novamente.';
         this.isLoading = false;
         this.cdr.detectChanges();
-      },
-      complete: () => {
-        console.log('🏁 Requisição de eventos finalizada');
       },
     });
   }
@@ -100,8 +92,8 @@ export class Admin implements OnInit {
   openCreateModal(): void {
     this.showCreateModal = true;
     this.createEventForm.reset({
-      churchId: 'church-1',
-      createdBy: this.currentUser?.username || 'admin',
+      churchId: this.currentUser?.churchId || '',
+      createdBy: this.currentUser?.username || '',
     });
     this.successMessage = '';
     this.errorMessage = '';
@@ -137,7 +129,7 @@ export class Admin implements OnInit {
 
     this.eventService.createEvent(eventData).subscribe({
       next: (response) => {
-        console.log('✅ Evento criado com sucesso:', response);
+        console.log('evento criado com sucesso:', response);
         this.successMessage = 'Evento criado com sucesso!';
         this.isSubmitting = false;
 
@@ -148,7 +140,7 @@ export class Admin implements OnInit {
         }, 1500);
       },
       error: (error) => {
-        console.error('❌ Erro ao criar evento:', error);
+        console.error('erro ao criar evento:', error);
         this.errorMessage = error.message || 'Erro ao criar evento.';
         this.isSubmitting = false;
       },

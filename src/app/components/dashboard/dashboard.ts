@@ -73,7 +73,7 @@ export class Dashboard implements OnInit {
         this.cdr.detectChanges();
       },
       error: (error: any) => {
-        console.error('❌ Erro ao carregar eventos:', error);
+        console.error('erro ao carregar eventos:', error);
         console.error('Status do erro:', error.status);
         console.error('Mensagem do erro:', error.message);
         this.errorMessage = error.message || 'Erro ao carregar eventos. Tente novamente.';

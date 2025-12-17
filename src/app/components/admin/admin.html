@@ -131,14 +131,14 @@
       </div>
 
       <form [formGroup]="createEventForm" (ngSubmit)="onSubmitCreate()" class="modal-body">
-        <!-- Success Message -->
+        <!-- caso de sucesso -->
         @if (successMessage) {
         <div class="success-message">
           ✅ {{ successMessage }}
         </div>
         }
 
-        <!-- Error Message -->
+        <!-- caso de erro -->
         @if (errorMessage) {
         <div class="error-message">
           ❌ {{ errorMessage }}
@@ -228,10 +228,6 @@
           <span class="error-text">Local é obrigatório</span>
           }
         </div>
-
-        <!-- Church ID (hidden) -->
-        <input type="hidden" formControlName="churchId" />
-        <input type="hidden" formControlName="createdBy" />
 
         <div class="modal-footer">
           <button

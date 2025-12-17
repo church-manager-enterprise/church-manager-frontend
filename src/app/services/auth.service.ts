@@ -10,6 +10,7 @@ export interface User {
   name: string;
   role: string;
   username: string;
+  churchId: string;
 }
 
 export interface LoginResponse {
