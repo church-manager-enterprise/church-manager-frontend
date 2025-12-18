@@ -14,4 +14,8 @@ export class Home {
   onEntrar(): void {
     this.router.navigate(['/login']);
   }
+
+  onCadastro(): void {
+    this.router.navigate(['/register']);
+  }
 }

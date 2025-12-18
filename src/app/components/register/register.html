@@ -1,0 +1,211 @@
+<div class="register-page">
+  <div class="register-container">
+    <div class="register-card">
+      <div class="register-header">
+        <div class="logo">
+          <img src="assets/church.ico" alt="Church Manager Logo" />
+        </div>
+        <h1 class="register-title">
+          <span class="church">CHURCH</span> <span class="manager">MANAGER</span>
+        </h1>
+        <p class="register-subtitle">Crie sua conta e faça parte da comunidade</p>
+      </div>
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+        <!-- Mensagem de Sucesso -->
+        @if (successMessage) {
+          <div class="success-message">
+            ✅ {{ successMessage }}
+          </div>
+        }
+
+        <!-- Mensagem de Erro -->
+        @if (errorMessage) {
+          <div class="error-message">
+            ❌ {{ errorMessage }}
+          </div>
+        }
+
+        <!-- Nome Completo -->
+        <div class="form-group">
+          <label for="name" class="form-label">Nome Completo</label>
+          <input
+            type="text"
+            id="name"
+            formControlName="name"
+            class="form-input"
+            placeholder="João da Silva"
+            [class.invalid]="name?.invalid && name?.touched"
+          />
+          @if (name?.invalid && name?.touched) {
+            <div class="form-error">
+              @if (name?.errors?.['required']) {
+                <span>Nome é obrigatório</span>
+              }
+              @if (name?.errors?.['minlength']) {
+                <span>Nome deve ter pelo menos 3 caracteres</span>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email" class="form-label">Email</label>
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            class="form-input"
+            placeholder="seu@email.com"
+            [class.invalid]="email?.invalid && email?.touched"
+          />
+          @if (email?.invalid && email?.touched) {
+            <div class="form-error">
+              @if (email?.errors?.['required']) {
+                <span>Email é obrigatório</span>
+              }
+              @if (email?.errors?.['email']) {
+                <span>Email inválido</span>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Username -->
+        <div class="form-group">
+          <label for="username" class="form-label">Nome de Usuário</label>
+          <input
+            type="text"
+            id="username"
+            formControlName="username"
+            class="form-input"
+            placeholder="joaosilva"
+            [class.invalid]="username?.invalid && username?.touched"
+          />
+          @if (username?.invalid && username?.touched) {
+            <div class="form-error">
+              @if (username?.errors?.['required']) {
+                <span>Nome de usuário é obrigatório</span>
+              }
+              @if (username?.errors?.['minlength']) {
+                <span>Nome de usuário deve ter pelo menos 3 caracteres</span>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Selecionar Igreja -->
+        <div class="form-group">
+          <label for="churchId" class="form-label">Selecione sua Igreja</label>
+          
+          @if (isLoadingChurches) {
+            <div class="loading-select">
+              <span class="loading-spinner-small"></span>
+              <span>Carregando igrejas...</span>
+            </div>
+          } @else {
+            <select
+              id="churchId"
+              formControlName="churchId"
+              class="form-select"
+              [class.invalid]="churchId?.invalid && churchId?.touched"
+            >
+              <option value="" disabled selected>Selecione uma igreja</option>
+              @for (church of churches; track church.id) {
+                <option [value]="church.id">{{ church.name }}</option>
+              }
+            </select>
+          }
+          
+          @if (churchId?.invalid && churchId?.touched) {
+            <div class="form-error">
+              @if (churchId?.errors?.['required']) {
+                <span>Selecione uma igreja</span>
+              }
+            </div>
+          }
+          
+          @if (churches.length === 0 && !isLoadingChurches && !errorMessage) {
+            <small class="form-hint warning">Nenhuma igreja disponível no momento</small>
+          } @else if (!isLoadingChurches) {
+            <small class="form-hint">{{ churches.length }} igreja(s) disponível(is)</small>
+          }
+        </div>
+
+        <!-- Senha -->
+        <div class="form-group">
+          <label for="password" class="form-label">Senha</label>
+          <input
+            type="password"
+            id="password"
+            formControlName="password"
+            class="form-input"
+            placeholder="••••••••"
+            [class.invalid]="password?.invalid && password?.touched"
+          />
+          @if (password?.invalid && password?.touched) {
+            <div class="form-error">
+              @if (password?.errors?.['required']) {
+                <span>Senha é obrigatória</span>
+              }
+              @if (password?.errors?.['minlength']) {
+                <span>Senha deve ter pelo menos 6 caracteres</span>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Confirmar Senha -->
+        <div class="form-group">
+          <label for="confirmPassword" class="form-label">Confirmar Senha</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            formControlName="confirmPassword"
+            class="form-input"
+            placeholder="••••••••"
+            [class.invalid]="confirmPassword?.invalid && confirmPassword?.touched"
+          />
+          @if (confirmPassword?.invalid && confirmPassword?.touched) {
+            <div class="form-error">
+              @if (confirmPassword?.errors?.['required']) {
+                <span>Confirmação de senha é obrigatória</span>
+              }
+              @if (confirmPassword?.errors?.['passwordMismatch']) {
+                <span>As senhas não coincidem</span>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Botão de Registro -->
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn-register"
+            [disabled]="isLoading || registerForm.invalid"
+          >
+            @if (isLoading) {
+              <span class="loading-spinner"></span>
+              <span>Cadastrando...</span>
+            } @else {
+              <span>Cadastrar</span>
+            }
+          </button>
+        </div>
+
+        <!-- Link para Login -->
+        <div class="form-footer">
+          <p class="login-text">
+            Já tem uma conta? <a routerLink="/login" class="link-login">Faça login</a>
+          </p>
+        </div>
+      </form>
+
+      <div class="back-to-home">
+        <a routerLink="/" class="link-home">← Voltar para página inicial</a>
+      </div>
+    </div>
+  </div>
+</div>
