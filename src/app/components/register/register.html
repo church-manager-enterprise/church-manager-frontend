@@ -1,4 +1,14 @@
 <div class="register-page">
+  @if (showSuccessTooltip) {
+    <div class="success-tooltip">
+      <div class="tooltip-content">
+        <span class="tooltip-icon">✅</span>
+        <span class="tooltip-text">Conta criada com sucesso!</span>
+        <span class="tooltip-subtext">Redirecionando para o login...</span>
+      </div>
+    </div>
+  }
+
   <div class="register-container">
     <div class="register-card">
       <div class="register-header">
@@ -98,7 +108,7 @@
         <!-- Selecionar Igreja -->
         <div class="form-group">
           <label for="churchId" class="form-label">Selecione sua Igreja</label>
-          
+
           @if (isLoadingChurches) {
             <div class="loading-select">
               <span class="loading-spinner-small"></span>
@@ -117,7 +127,7 @@
               }
             </select>
           }
-          
+
           @if (churchId?.invalid && churchId?.touched) {
             <div class="form-error">
               @if (churchId?.errors?.['required']) {
@@ -125,7 +135,7 @@
               }
             </div>
           }
-          
+
           @if (churches.length === 0 && !isLoadingChurches && !errorMessage) {
             <small class="form-hint warning">Nenhuma igreja disponível no momento</small>
           } @else if (!isLoadingChurches) {

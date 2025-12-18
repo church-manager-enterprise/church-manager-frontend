@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-login',
@@ -48,39 +49,49 @@ export class Login implements OnInit {
 
       const { email, password } = this.loginForm.value;
 
-      this.authService.login(email, password).subscribe({
-        next: (response) => {
-          this.isLoading = false;
-          console.log('Login bem-sucedido');
+      this.authService
+        .login(email, password)
+        .pipe(
+          finalize(() => {
+            this.isLoading = false;
+            this.cdr.detectChanges();
+            console.log('🔄 finalize() executado. isLoading:', this.isLoading);
+          })
+        )
+        .subscribe({
+          next: (response) => {
+            console.log('✅ Login bem-sucedido');
 
-          const user = this.authService.getUser();
-          if (user?.role === 'ADMIN') {
-            console.log('Redirecionando para painel de administração');
-            this.router.navigate(['/admin']);
-          } else {
-            console.log('Redirecionando para dashboard de usuário');
-            this.router.navigate(['/dashboard']);
-          }
-        },
-        error: (error) => {
-          this.isLoading = false;
+            const user = this.authService.getUser();
+            if (user?.role === 'ADMIN') {
+              console.log('Redirecionando para painel de administração');
+              this.router.navigate(['/admin']);
+            } else {
+              console.log('Redirecionando para dashboard de usuário');
+              this.router.navigate(['/dashboard']);
+            }
+          },
+          error: (error) => {
+            console.error('❌ Erro no login:', error);
+            console.log('Status do erro:', error.status);
+            console.log('Mensagem do erro:', error.message);
 
-          if (error.status === 401) {
-            this.errorMessage = 'Email ou senha incorretos';
-          } else if (error.status === 404 || error.status === 0) {
-            this.errorMessage = 'Servidor não encontrado';
-          } else if (error.status === 400) {
-            this.errorMessage = 'Dados inválidos';
-          } else if (error.status === 500) {
-            this.errorMessage = 'Erro interno do servidor';
-          } else {
-            this.errorMessage = 'Erro ao fazer login';
-          }
-          this.cdr.detectChanges();
+            // Define mensagem baseada no status e na mensagem da API
+            if (error.status === 400) {
+              this.errorMessage = 'Email ou senha incorretos';
+            } else if (error.status === 401) {
+              this.errorMessage = 'Email ou senha incorretos';
+            } else if (error.status === 404 || error.status === 0) {
+              this.errorMessage = 'Servidor não encontrado';
+            } else if (error.status === 500) {
+              this.errorMessage = 'Erro interno do servidor';
+            } else {
+              this.errorMessage = 'Erro ao fazer login';
+            }
 
-          console.error('Erro no login:', error);
-        },
-      });
+            console.log('errorMessage definido como:', this.errorMessage);
+          },
+        });
     } else {
       this.markFormGroupTouched(this.loginForm);
     }

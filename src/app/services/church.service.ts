@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable, throwError, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 export interface Church {
@@ -14,6 +14,13 @@ export interface Church {
 export class ChurchService {
   private apiUrl = 'http://localhost:8080/api';
 
+  // Mock data fallback for 404 responses
+  private mockChurches: Church[] = [
+    { id: 'church-1', name: 'Igreja Batista Central' },
+    { id: 'church-2', name: 'Igreja Presbiteriana' },
+    { id: 'church-3', name: 'Assembleia de Deus' },
+  ];
+
   constructor(private http: HttpClient) {}
 
   getAllChurches(): Observable<Church[]> {
@@ -22,14 +29,19 @@ export class ChurchService {
 
     console.log('🔄 Buscando igrejas disponíveis...');
 
-    return this.http.get<Church[]>(url, { headers }).pipe(
-      map((churches: Church[]) => {
-        return churches;
-      }),
-    );
+    // Dados temporarios  -> TODO: remover quando tiver a api de church
+    return of(this.mockChurches);
+
+    // return this.http.get<Church[]>(url, { headers }).pipe(
+    //   map((churches: Church[]) => {
+    //     console.log('✅ Igrejas carregadas da API:', churches);
+    //     return churches;
+    //   }),
+    //   catchError((error: HttpErrorResponse) => this.handleError(error))
+    // );
   }
 
-  private handleError(error: HttpErrorResponse): Observable<never> {
+  private handleError(error: HttpErrorResponse): Observable<Church[]> {
     let errorMessage = 'Erro ao carregar igrejas.';
 
     if (error.error instanceof ErrorEvent) {
@@ -37,7 +49,8 @@ export class ChurchService {
     } else {
       switch (error.status) {
         case 404:
-          errorMessage = 'Nenhuma igreja encontrada.';
+          console.log('caiu no erro 404');
+          errorMessage = `Nenchuma igreja encontrada`;
           break;
         case 401:
           errorMessage = 'Não autorizado.';

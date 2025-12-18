@@ -56,10 +56,8 @@ export class AuthService {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
 
     return this.http.post<LoginResponse>(`${this.apiUrl}/auth/register`, data, { headers }).pipe(
-      tap((response) => {
-        console.log('Registro bem-sucedido, salvando token e dados do usuário');
-        this.setToken(response.token);
-        this.setUser(response.user);
+      tap(() => {
+        console.log('Registro funcionou');
       }),
       catchError(this.handleError)
     );
@@ -122,10 +120,10 @@ export class AuthService {
     } else {
       switch (error.status) {
         case 400:
-          errorMessage = 'Dados inválidos. Verifique os campos e tente novamente.';
+          errorMessage = error.error?.error || error.error?.message || 'Dados inválidos. Verifique os campos e tente novamente.';
           break;
         case 401:
-          errorMessage = 'Email ou senha incorretos.';
+          errorMessage = error.error?.error || error.error?.message || 'Email ou senha incorretos.';
           break;
         case 403:
           errorMessage = 'Acesso negado.';
@@ -140,14 +138,15 @@ export class AuthService {
           errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão.';
           break;
         default:
-          errorMessage = error.error?.message || error.message || 'Erro ao processar requisição.';
+          errorMessage = error.error?.error || error.error?.message || error.message || 'Erro ao processar requisição.';
       }
     }
 
     console.error('Erro HTTP:', {
       status: statusCode,
       message: errorMessage,
-      error: error
+      fullError: error,
+      errorBody: error.error
     });
 
     return throwError(() => ({ status: statusCode, message: errorMessage }));

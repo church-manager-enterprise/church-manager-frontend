@@ -17,6 +17,7 @@ export class Register implements OnInit {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  showSuccessTooltip = false;
   churches: Church[] = [];
   isLoadingChurches = true;
 
@@ -38,7 +39,6 @@ export class Register implements OnInit {
   }
 
   ngOnInit(): void {
-    // Se já está autenticado, redireciona
     if (this.authService.isAuthenticated()) {
       const user = this.authService.getUser();
       if (user?.role === 'ADMIN') {
@@ -49,7 +49,6 @@ export class Register implements OnInit {
       return;
     }
 
-    // Carrega lista de igrejas
     this.loadChurches();
   }
 
@@ -70,7 +69,6 @@ export class Register implements OnInit {
     });
   }
 
-  // Validador customizado para confirmar senha
   passwordMatchValidator(form: FormGroup) {
     const password = form.get('password');
     const confirmPassword = form.get('confirmPassword');
@@ -104,17 +102,14 @@ export class Register implements OnInit {
       this.authService.register(registerData).subscribe({
         next: (response) => {
           console.log('✅ Registro bem-sucedido:', response);
-          this.successMessage = 'Cadastro realizado com sucesso! Redirecionando...';
-
-          // Redireciona após 1.5 segundos
+          
+          this.showSuccessTooltip = true;
+          this.successMessage = 'Conta criada com sucesso! 🎉';
+          
           setTimeout(() => {
-            const user = this.authService.getUser();
-            if (user?.role === 'ADMIN') {
-              this.router.navigate(['/admin']);
-            } else {
-              this.router.navigate(['/dashboard']);
-            }
-          }, 1500);
+            console.log('🔄 Redirecionando para tela de login...');
+            this.router.navigate(['/login'], );
+          }, 2000);
         },
         error: (error) => {
           console.error('❌ Erro no registro:', error);
@@ -149,7 +144,6 @@ export class Register implements OnInit {
     });
   }
 
-  // Getters para validação
   get name() {
     return this.registerForm.get('name');
   }

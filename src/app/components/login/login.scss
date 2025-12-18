@@ -62,6 +62,16 @@
   gap: 1.5rem;
 }
 
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  border-left: 4px solid #28a745;
+  animation: slideDown 0.3s ease-out;
+}
+
 .error-message {
   background-color: #fee;
   color: #c33;
@@ -232,5 +242,16 @@
 
   .login-title {
     font-size: 1.75rem;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

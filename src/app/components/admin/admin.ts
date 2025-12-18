@@ -133,7 +133,6 @@ export class Admin implements OnInit {
 
     const formValue = this.createEventForm.value;
 
-    // Converter datas para formato ISO
     const eventData = {
       ...formValue,
       startDatetime: new Date(formValue.startDatetime).toISOString(),
@@ -148,7 +147,6 @@ export class Admin implements OnInit {
         this.successMessage = 'Evento criado com sucesso!';
         this.isSubmitting = false;
 
-        // Recarregar lista de eventos
         setTimeout(() => {
           this.closeCreateModal();
           this.loadAllEvents();
@@ -171,11 +169,9 @@ export class Admin implements OnInit {
     this.selectedEvent = event;
     this.showEditModal = true;
 
-    // Converter data do formato ISO para datetime-local
     const startDate = new Date(event.date);
     const startDatetimeLocal = this.formatDateTimeLocal(startDate);
 
-    // Estimar endDatetime (adicionar 2 horas ao início)
     const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
     const endDatetimeLocal = this.formatDateTimeLocal(endDate);
 
@@ -213,7 +209,6 @@ export class Admin implements OnInit {
 
     const formValue = this.editEventForm.value;
 
-    // Converter datas para formato ISO
     const eventData = {
       ...formValue,
       startDatetime: new Date(formValue.startDatetime).toISOString(),
@@ -228,7 +223,6 @@ export class Admin implements OnInit {
         this.successMessage = 'Evento atualizado com sucesso!';
         this.isSubmitting = false;
 
-        // Recarregar lista de eventos
         setTimeout(() => {
           this.closeEditModal();
           this.loadAllEvents();
@@ -330,7 +324,6 @@ export class Admin implements OnInit {
     });
   }
 
-  // Getters para validação do formulário de criação
   get name() {
     return this.createEventForm.get('name');
   }
@@ -351,7 +344,6 @@ export class Admin implements OnInit {
     return this.createEventForm.get('location');
   }
 
-  // Getters para validação do formulário de edição
   get editName() {
     return this.editEventForm.get('name');
   }
