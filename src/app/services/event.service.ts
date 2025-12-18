@@ -110,6 +110,41 @@ export class EventService {
     );
   }
 
+  updateEvent(eventId: string, eventData: any): Observable<EventResponse> {
+    console.log('EventService.updateEvent chamado com:', eventId, eventData);
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const url = `${this.apiUrl}/events/${eventId}`;
+    console.log('URL completa:', url);
+
+    return this.http.put<EventResponse>(url, eventData, { headers }).pipe(
+      map((response: EventResponse) => {
+        console.log('Evento atualizado com sucesso:', response);
+        return response;
+      }),
+      catchError((error) => {
+        console.error('Erro ao atualizar evento:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
+  deleteEvent(eventId: string): Observable<void> {
+    console.log('EventService.deleteEvent chamado com:', eventId);
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const url = `${this.apiUrl}/events/${eventId}`;
+    console.log('URL completa:', url);
+
+    return this.http.delete<void>(url, { headers }).pipe(
+      map(() => {
+        console.log('Evento excluído com sucesso');
+      }),
+      catchError((error) => {
+        console.error('Erro ao excluir evento:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
   private mapEventsToUI(events: EventResponse[]): Event[] {
     return events.map((event) => this.mapEventToUI(event));
   }

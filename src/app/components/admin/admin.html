@@ -109,8 +109,8 @@
             </div>
 
             <div class="event-footer">
-              <button class="btn-event-edit">✏️ Editar</button>
-              <button class="btn-event-delete">🗑️ Excluir</button>
+              <button class="btn-event-edit" (click)="openEditModal(event)">✏️ Editar</button>
+              <button class="btn-event-delete" (click)="openDeleteConfirm(event)">🗑️ Excluir</button>
             </div>
           </div>
           }
@@ -251,6 +251,191 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+  }
+
+  <!-- Modal Editar Evento -->
+  @if (showEditModal) {
+  <div class="modal-overlay" (click)="closeEditModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">✏️ Editar Evento</h2>
+        <button class="btn-close-modal" (click)="closeEditModal()">✕</button>
+      </div>
+
+      <form [formGroup]="editEventForm" (ngSubmit)="onSubmitEdit()" class="modal-body">
+        <!-- caso de sucesso -->
+        @if (successMessage) {
+        <div class="success-message">
+          ✅ {{ successMessage }}
+        </div>
+        }
+
+        <!-- caso de erro -->
+        @if (errorMessage) {
+        <div class="error-message">
+          ❌ {{ errorMessage }}
+        </div>
+        }
+
+        <!-- Nome do Evento -->
+        <div class="form-group">
+          <label for="editName" class="form-label">Nome do Evento *</label>
+          <input
+            type="text"
+            id="editName"
+            formControlName="name"
+            class="form-input"
+            placeholder="Ex: Culto Dominical"
+            [class.input-error]="editName?.invalid && editName?.touched"
+          />
+          @if (editName?.invalid && editName?.touched) {
+          <span class="error-text">
+            @if (editName?.errors?.['required']) { Nome é obrigatório }
+            @if (editName?.errors?.['minlength']) { Nome deve ter no mínimo 3 caracteres }
+          </span>
+          }
+        </div>
+
+        <!-- Descrição -->
+        <div class="form-group">
+          <label for="editDescription" class="form-label">Descrição *</label>
+          <textarea
+            id="editDescription"
+            formControlName="description"
+            class="form-textarea"
+            placeholder="Descreva o evento..."
+            rows="3"
+            [class.input-error]="editDescription?.invalid && editDescription?.touched"
+          ></textarea>
+          @if (editDescription?.invalid && editDescription?.touched) {
+          <span class="error-text">
+            @if (editDescription?.errors?.['required']) { Descrição é obrigatória }
+            @if (editDescription?.errors?.['minlength']) { Descrição deve ter no mínimo 10 caracteres }
+          </span>
+          }
+        </div>
+
+        <!-- Data/Hora Início -->
+        <div class="form-group">
+          <label for="editStartDatetime" class="form-label">Data/Hora de Início *</label>
+          <input
+            type="datetime-local"
+            id="editStartDatetime"
+            formControlName="startDatetime"
+            class="form-input"
+            [class.input-error]="editStartDatetime?.invalid && editStartDatetime?.touched"
+          />
+          @if (editStartDatetime?.invalid && editStartDatetime?.touched) {
+          <span class="error-text">Data/hora de início é obrigatória</span>
+          }
+        </div>
+
+        <!-- Data/Hora Fim -->
+        <div class="form-group">
+          <label for="editEndDatetime" class="form-label">Data/Hora de Término *</label>
+          <input
+            type="datetime-local"
+            id="editEndDatetime"
+            formControlName="endDatetime"
+            class="form-input"
+            [class.input-error]="editEndDatetime?.invalid && editEndDatetime?.touched"
+          />
+          @if (editEndDatetime?.invalid && editEndDatetime?.touched) {
+          <span class="error-text">Data/hora de término é obrigatória</span>
+          }
+        </div>
+
+        <!-- Local -->
+        <div class="form-group">
+          <label for="editLocation" class="form-label">Local *</label>
+          <input
+            type="text"
+            id="editLocation"
+            formControlName="location"
+            class="form-input"
+            placeholder="Ex: Igreja Central"
+            [class.input-error]="editLocation?.invalid && editLocation?.touched"
+          />
+          @if (editLocation?.invalid && editLocation?.touched) {
+          <span class="error-text">Local é obrigatório</span>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn-cancel"
+            (click)="closeEditModal()"
+            [disabled]="isSubmitting"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="btn-submit"
+            [disabled]="isSubmitting || editEventForm.invalid"
+          >
+            @if (isSubmitting) {
+              <span>Atualizando...</span>
+            } @else {
+              <span>Atualizar Evento</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  }
+
+  <!-- Modal Confirmar Exclusão -->
+  @if (showDeleteConfirm) {
+  <div class="modal-overlay" (click)="closeDeleteConfirm()">
+    <div class="modal-container modal-small" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">🗑️ Confirmar Exclusão</h2>
+        <button class="btn-close-modal" (click)="closeDeleteConfirm()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- caso de erro -->
+        @if (errorMessage) {
+        <div class="error-message">
+          ❌ {{ errorMessage }}
+        </div>
+        }
+
+        <p class="delete-message">
+          Tem certeza que deseja excluir o evento <strong>{{ eventToDelete?.title }}</strong>?
+        </p>
+        <p class="delete-warning">
+          ⚠️ Esta ação não pode ser desfeita.
+        </p>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn-cancel"
+            (click)="closeDeleteConfirm()"
+            [disabled]="isSubmitting"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-delete-confirm"
+            (click)="confirmDelete()"
+            [disabled]="isSubmitting"
+          >
+            @if (isSubmitting) {
+              <span>Excluindo...</span>
+            } @else {
+              <span>Sim, Excluir</span>
+            }
+          </button>
+        </div>
+      </div>
     </div>
   </div>
   }

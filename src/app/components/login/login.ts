@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -19,11 +19,12 @@ export class Login implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['', [Validators.required, Validators.minLength(6)]],
     });
   }
 
@@ -52,7 +53,6 @@ export class Login implements OnInit {
           this.isLoading = false;
           console.log('Login bem-sucedido');
 
-          // Redirecionar baseado no role do usuário
           const user = this.authService.getUser();
           if (user?.role === 'ADMIN') {
             console.log('Redirecionando para painel de administração');
@@ -66,19 +66,20 @@ export class Login implements OnInit {
           this.isLoading = false;
 
           if (error.status === 401) {
-            this.errorMessage = 'Email ou senha incorretos. Por favor, tente novamente.';
+            this.errorMessage = 'Email ou senha incorretos';
           } else if (error.status === 404 || error.status === 0) {
-            this.errorMessage = 'Não foi possível conectar ao servidor. Verifique se ele está rodando em http://localhost:8080';
+            this.errorMessage = 'Servidor não encontrado';
           } else if (error.status === 400) {
-            this.errorMessage = 'Dados inválidos. Verifique os campos e tente novamente.';
+            this.errorMessage = 'Dados inválidos';
           } else if (error.status === 500) {
-            this.errorMessage = 'Erro interno do servidor. Tente novamente mais tarde.';
+            this.errorMessage = 'Erro interno do servidor';
           } else {
-            this.errorMessage = error.message || 'Erro ao fazer login. Por favor, tente novamente.';
+            this.errorMessage = 'Erro ao fazer login';
           }
+          this.cdr.detectChanges();
 
           console.error('Erro no login:', error);
-        }
+        },
       });
     } else {
       this.markFormGroupTouched(this.loginForm);
@@ -86,7 +87,7 @@ export class Login implements OnInit {
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {
-    Object.keys(formGroup.controls).forEach(key => {
+    Object.keys(formGroup.controls).forEach((key) => {
       const control = formGroup.get(key);
       control?.markAsTouched();
     });

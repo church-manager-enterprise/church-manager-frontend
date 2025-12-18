@@ -9,19 +9,9 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './home.scss',
 })
 export class Home {
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
+  constructor(private router: Router) {}
 
   onEntrar(): void {
-    this.authService.login('usuario@church.com', '123456').subscribe({
-      next: () => {
-        this.router.navigate(['/dashboard']);
-      },
-      error: (error) => {
-        console.error('Erro ao fazer login:', error);
-      }
-    });
+    this.router.navigate(['/login']);
   }
 }
