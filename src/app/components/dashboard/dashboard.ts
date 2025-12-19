@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService, User } from '../../services/auth.service';
-import { EventService } from '../../services/event.service';
+import { EventService, EventResponse } from '../../services/event.service';
 
 interface Event {
   id: string;
@@ -29,6 +29,8 @@ export class Dashboard implements OnInit {
   events: Event[] = [];
   isLoading = true;
   errorMessage = '';
+  showDetailsModal = false;
+  selectedEventDetails: EventResponse | null = null;
 
   constructor(
     private authService: AuthService,
@@ -132,5 +134,43 @@ export class Dashboard implements OnInit {
 
   getPendingEventsCount(): number {
     return this.events.filter((event) => event.status === 'pendente').length;
+  }
+
+  // Métodos para Modal de Detalhes
+  openDetailsModal(event: Event): void {
+    this.errorMessage = '';
+    this.showDetailsModal = true;
+
+    console.log('🔄 Carregando detalhes do evento:', event.id);
+
+    this.eventService.getEventDetails(event.id).subscribe({
+      next: (eventDetails) => {
+        console.log('✅ Detalhes do evento carregados:', eventDetails);
+        this.selectedEventDetails = eventDetails;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('❌ Erro ao carregar detalhes do evento:', error);
+        this.errorMessage = error.message || 'Erro ao carregar detalhes do evento';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  closeDetailsModal(): void {
+    this.showDetailsModal = false;
+    this.selectedEventDetails = null;
+    this.errorMessage = '';
+  }
+
+  getRoleLabel(role: string): string {
+    const roleMap: { [key: string]: string } = {
+      'PARTICIPANT': 'Participante',
+      'ORGANIZER': 'Organizador',
+      'VOLUNTEER': 'Voluntário',
+      'SPEAKER': 'Palestrante',
+      'COORDINATOR': 'Coordenador'
+    };
+    return roleMap[role] || role;
   }
 }

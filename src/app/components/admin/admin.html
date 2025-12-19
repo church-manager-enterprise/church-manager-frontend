@@ -109,8 +109,18 @@
             </div>
 
             <div class="event-footer">
-              <button class="btn-event-edit" (click)="openEditModal(event)">✏️ Editar</button>
-              <button class="btn-event-delete" (click)="openDeleteConfirm(event)">🗑️ Excluir</button>
+              <button class="btn-event-details" (click)="openDetailsModal(event)" title="Ver detalhes">
+                👁️ Detalhes
+              </button>
+              <button class="btn-event-participants" (click)="openAddParticipantModal(event)" title="Adicionar participantes">
+                👤 Adicionar
+              </button>
+              <button class="btn-event-edit" (click)="openEditModal(event)" title="Editar evento">
+                ✏️ Editar
+              </button>
+              <button class="btn-event-delete" (click)="openDeleteConfirm(event)" title="Excluir evento">
+                🗑️ Excluir
+              </button>
             </div>
           </div>
           }
@@ -145,7 +155,6 @@
         </div>
         }
 
-        <!-- Nome do Evento -->
         <div class="form-group">
           <label for="name" class="form-label">Nome do Evento *</label>
           <input
@@ -435,6 +444,261 @@
             }
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Modal Adicionar Participante -->
+  @if (showAddParticipantModal) {
+  <div class="modal-overlay" (click)="closeAddParticipantModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">👥 Adicionar Participantes</h2>
+        <button class="btn-close-modal" (click)="closeAddParticipantModal()">✕</button>
+      </div>
+
+      <form [formGroup]="addParticipantForm" (ngSubmit)="onSubmitAddParticipant()" class="modal-body">
+        <!-- Caso de sucesso -->
+        @if (successMessage) {
+        <div class="success-message">
+          ✅ {{ successMessage }}
+        </div>
+        }
+
+        <!-- Caso de erro -->
+        @if (errorMessage) {
+        <div class="error-message">
+          ❌ {{ errorMessage }}
+        </div>
+        }
+
+        <!-- Evento Info -->
+        @if (selectedEventForParticipant) {
+        <div class="event-info-box">
+          <h3>{{ selectedEventForParticipant.title }}</h3>
+          <p>📍 {{ selectedEventForParticipant.location }}</p>
+          <p>📅 {{ formatDate(selectedEventForParticipant.date) }}</p>
+          <p>👥 {{ selectedEventForParticipant.participants }} participantes atuais</p>
+        </div>
+        }
+
+        <!-- Loading Members -->
+        @if (isLoadingMembers) {
+        <div class="loading-members">
+          <span class="loading-spinner-small"></span>
+          <span>Carregando membros...</span>
+        </div>
+        }
+
+        <!-- Lista de Participantes -->
+        @if (!isLoadingMembers) {
+        <div formArrayName="participants" class="participants-list">
+          @for (participant of participants.controls; track $index) {
+            <div [formGroupName]="$index" class="participant-row">
+              <div class="row-number">
+                <span class="participant-badge">#{{ $index + 1 }}</span>
+              </div>
+
+              <div class="participant-fields">
+                <!-- Select de Membro -->
+                <div class="form-group">
+                  <label [for]="'memberId-' + $index" class="form-label">Membro *</label>
+                  <select
+                    [id]="'memberId-' + $index"
+                    formControlName="memberId"
+                    class="form-select"
+                    [class.invalid]="participants.at($index).get('memberId')?.invalid && participants.at($index).get('memberId')?.touched"
+                  >
+                    <option value="" disabled>Selecione um membro</option>
+                    @for (member of churchMembers; track member.id) {
+                      <option [value]="member.id">{{ member.name }}</option>
+                    }
+                  </select>
+                  @if (participants.at($index).get('memberId')?.invalid && participants.at($index).get('memberId')?.touched) {
+                    <div class="form-error">
+                      <span>Selecione um membro</span>
+                    </div>
+                  }
+                </div>
+
+                <!-- Função/Role -->
+                <div class="form-group">
+                  <label [for]="'role-' + $index" class="form-label">Função *</label>
+                  <select
+                    [id]="'role-' + $index"
+                    formControlName="role"
+                    class="form-select"
+                    [class.invalid]="participants.at($index).get('role')?.invalid && participants.at($index).get('role')?.touched"
+                  >
+                    <option value="PARTICIPANT">Participante</option>
+                    <option value="ORGANIZER">Organizador</option>
+                    <option value="VOLUNTEER">Voluntário</option>
+                    <option value="SPEAKER">Palestrante</option>
+                    <option value="COORDINATOR">Coordenador</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row-actions">
+                @if (participants.length > 1) {
+                  <button
+                    type="button"
+                    class="btn-remove-row"
+                    (click)="removeParticipantRow($index)"
+                    [disabled]="isSubmitting"
+                    title="Remover participante"
+                  >
+                    🗑️
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Botão Adicionar Mais -->
+        <div class="add-more-section">
+          <button
+            type="button"
+            class="btn-add-more"
+            (click)="addParticipantRow()"
+            [disabled]="isSubmitting"
+          >
+            <span>➕ Adicionar Outro Participante</span>
+          </button>
+        </div>
+
+        <div class="participants-summary">
+          <span>Total de participantes a adicionar: <strong>{{ participants.length }}</strong></span>
+        </div>
+        }
+
+        <!-- Botões de Ação -->
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn-cancel"
+            (click)="closeAddParticipantModal()"
+            [disabled]="isSubmitting"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="btn-submit"
+            [disabled]="isSubmitting || addParticipantForm.invalid"
+          >
+            @if (isSubmitting) {
+              <span class="loading-spinner-small"></span>
+              <span>Adicionando...</span>
+            } @else {
+              <span>Adicionar {{ participants.length }} Participante{{ participants.length > 1 ? 's' : '' }}</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  }
+
+  <!-- Modal Detalhes do Evento -->
+  @if (showDetailsModal) {
+  <div class="modal-overlay" (click)="closeDetailsModal()">
+    <div class="modal-container modal-details" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">📋 Detalhes do Evento</h2>
+        <button class="btn-close-modal" (click)="closeDetailsModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Caso de erro -->
+        @if (errorMessage) {
+        <div class="error-message">
+          ❌ {{ errorMessage }}
+        </div>
+        }
+
+        <!-- Loading
+        @if (isLoadingDetails) {
+        <div class="loading-details">
+          <span class="loading-spinner-large"></span>
+          <p>Carregando detalhes...</p>
+        </div>
+        } -->
+
+        <!-- Conteúdo dos Detalhes -->
+        @if (selectedEventDetails) {
+        <!-- Informações Gerais -->
+        <div class="details-section">
+          <h3 class="details-section-title">📌 Informações Gerais</h3>
+          <div class="details-info-grid">
+            <div class="info-item">
+              <span class="info-label">Nome:</span>
+              <span class="info-value">{{ selectedEventDetails.name }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Local:</span>
+              <span class="info-value">{{ selectedEventDetails.location }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Início:</span>
+              <span class="info-value">{{ formatDate(selectedEventDetails.startDatetime) }} às {{ formatTime(selectedEventDetails.startDatetime) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Término:</span>
+              <span class="info-value">{{ formatDate(selectedEventDetails.endDatetime) }} às {{ formatTime(selectedEventDetails.endDatetime) }}</span>
+            </div>
+            <div class="info-item full-width">
+              <span class="info-label">Descrição:</span>
+              <span class="info-value">{{ selectedEventDetails.description }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Participantes -->
+        <div class="details-section">
+          <h3 class="details-section-title">👥 Participantes ({{ selectedEventDetails.participants.length }})</h3>
+
+          @if (selectedEventDetails.participants.length === 0) {
+          <div class="empty-list">
+            <p>Nenhum participante cadastrado ainda.</p>
+          </div>
+          } @else {
+          <div class="participants-table">
+            <div class="table-header">
+              <div class="table-cell">#</div>
+              <div class="table-cell">ID</div>
+              <div class="table-cell">Função</div>
+              <div class="table-cell">Registrado em</div>
+            </div>
+            @for (participant of selectedEventDetails.participants; track participant.id; let i = $index) {
+            <div class="table-row">
+              <div class="table-cell">{{ i + 1 }}</div>
+              <div class="table-cell">{{ participant.memberId }}</div>
+              <div class="table-cell">
+                <span class="role-badge role-{{ participant.role.toLowerCase() }}">
+                  {{ getRoleLabel(participant.role) }}
+                </span>
+              </div>
+              <div class="table-cell">{{ formatDate(participant.registeredAt) }}</div>
+            </div>
+            }
+          </div>
+          }
+        </div>
+        }
+      </div>
+
+      <!-- Footer do Modal -->
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn-cancel"
+          (click)="closeDetailsModal()"
+        >
+          Fechar
+        </button>
       </div>
     </div>
   </div>

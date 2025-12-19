@@ -12,6 +12,37 @@ export interface Participant {
   updatedAt: string;
 }
 
+export interface AddParticipantRequest {
+  eventId: string;
+  memberId: string;
+  role: string;
+  registeredAt?: string;
+}
+
+export interface AddParticipantsRequest {
+  eventId: string;
+  participants: Array<{
+    memberId: string;
+    role: string;
+    registeredAt?: string;
+  }>;
+}
+
+export interface AddParticipantResponse {
+  id: string;
+  eventId: string;
+  memberId: string;
+  role: string;
+  registeredAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AddParticipantsResponse {
+  count: number;
+  participants: AddParticipantResponse[];
+}
+
 export interface Organizer {
   id: string;
   memberId: string;
@@ -86,6 +117,23 @@ export class EventService {
     );
   }
 
+  getEventDetails(id: string): Observable<EventResponse> {
+    console.log('EventService.getEventDetails chamado para evento:', id);
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const url = `${this.apiUrl}/events/${id}`;
+
+    return this.http.get<EventResponse>(url, { headers }).pipe(
+      map((event: EventResponse) => {
+        console.log('✅ Detalhes do evento carregados:', event);
+        return event;
+      }),
+      catchError((error) => {
+        console.error('❌ Erro ao carregar detalhes do evento:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
   confirmAttendance(eventId: string): Observable<any> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http
@@ -140,6 +188,58 @@ export class EventService {
       }),
       catchError((error) => {
         console.error('Erro ao excluir evento:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
+  addParticipant(participantData: AddParticipantRequest): Observable<AddParticipantResponse> {
+    console.log('EventService.addParticipant chamado com:', participantData);
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const url = `${this.apiUrl}/events/${participantData.eventId}/participants`;
+
+    const body = {
+      memberId: participantData.memberId,
+      role: participantData.role,
+      registeredAt: participantData.registeredAt || new Date().toISOString()
+    };
+
+    console.log('URL completa:', url);
+    console.log('Body da requisição:', body);
+
+    return this.http.post<AddParticipantResponse>(url, body, { headers }).pipe(
+      map((response) => {
+        console.log('✅ Participante adicionado com sucesso:', response);
+        return response;
+      }),
+      catchError((error) => {
+        console.error('❌ Erro ao adicionar participante:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
+  addParticipants(requestData: AddParticipantsRequest): Observable<AddParticipantsResponse> {
+    console.log('EventService.addParticipants chamado com:', requestData);
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const url = `${this.apiUrl}/events/${requestData.eventId}/participants`;
+
+    const body = requestData.participants.map(p => ({
+      memberId: p.memberId,
+      role: p.role,
+      registeredAt: p.registeredAt || new Date().toISOString()
+    }));
+
+    console.log('URL completa:', url);
+    console.log('Body da requisição (array):', body);
+
+    return this.http.post<AddParticipantsResponse>(url, body, { headers }).pipe(
+      map((response) => {
+        console.log('✅ Participantes adicionados com sucesso:', response);
+        return response;
+      }),
+      catchError((error) => {
+        console.error('❌ Erro ao adicionar participantes:', error);
         return this.handleError(error);
       })
     );

@@ -25,20 +25,17 @@ export class ChurchService {
 
   getAllChurches(): Observable<Church[]> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    const url = `${this.apiUrl}/churchs`;
+    const url = `${this.apiUrl}/churches`;
 
     console.log('🔄 Buscando igrejas disponíveis...');
 
-    // Dados temporarios  -> TODO: remover quando tiver a api de church
-    return of(this.mockChurches);
+    // // Dados temporarios  -> TODO: remover quando tiver a api de church
+    // return of(this.mockChurches);
 
-    // return this.http.get<Church[]>(url, { headers }).pipe(
-    //   map((churches: Church[]) => {
-    //     console.log('✅ Igrejas carregadas da API:', churches);
-    //     return churches;
-    //   }),
-    //   catchError((error: HttpErrorResponse) => this.handleError(error))
-    // );
+    return this.http.get<Church[]>(url, { headers }).pipe(
+      map((churches: Church[]) => churches),
+      catchError((error: HttpErrorResponse) => this.handleError(error))
+    );
   }
 
   private handleError(error: HttpErrorResponse): Observable<Church[]> {

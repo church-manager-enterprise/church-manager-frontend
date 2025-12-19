@@ -1,9 +1,10 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService, User } from '../../services/auth.service';
-import { EventService, Event } from '../../services/event.service';
+import { EventService, Event, EventResponse } from '../../services/event.service';
+import { MemberService, Member } from '../../services/member.service';
 
 @Component({
   selector: 'app-admin',
@@ -28,10 +29,18 @@ export class Admin implements OnInit {
   selectedEvent: Event | null = null;
   showDeleteConfirm = false;
   eventToDelete: Event | null = null;
+  showAddParticipantModal = false;
+  selectedEventForParticipant: Event | null = null;
+  addParticipantForm: FormGroup;
+  churchMembers: Member[] = [];
+  isLoadingMembers = false;
+  showDetailsModal = false;
+  selectedEventDetails: EventResponse | null = null;
 
   constructor(
     private authService: AuthService,
     private eventService: EventService,
+    private memberService: MemberService,
     private router: Router,
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef
@@ -54,6 +63,10 @@ export class Admin implements OnInit {
       endDatetime: ['', Validators.required],
       location: ['', Validators.required],
       createdBy: ['', Validators.required],
+    });
+
+    this.addParticipantForm = this.fb.group({
+      participants: this.fb.array([])
     });
   }
 
@@ -362,5 +375,162 @@ export class Admin implements OnInit {
 
   get editLocation() {
     return this.editEventForm.get('location');
+  }
+
+  get participants(): FormArray {
+    return this.addParticipantForm.get('participants') as FormArray;
+  }
+
+  createParticipantFormGroup(): FormGroup {
+    return this.fb.group({
+      memberId: ['', Validators.required],
+      role: ['PARTICIPANT', Validators.required]
+    });
+  }
+
+  addParticipantRow(): void {
+    this.participants.push(this.createParticipantFormGroup());
+  }
+
+  removeParticipantRow(index: number): void {
+    if (this.participants.length > 1) {
+      this.participants.removeAt(index);
+    }
+  }
+
+  openAddParticipantModal(event: Event): void {
+    this.selectedEventForParticipant = event;
+    this.successMessage = '';
+    this.errorMessage = '';
+
+    this.isLoadingMembers = true;
+    const churchId = this.currentUser?.churchId || '';
+
+
+    this.memberService.getChurchMembers(churchId).subscribe({
+      next: (members) => {
+        this.churchMembers = members;
+        this.isLoadingMembers = false;
+
+        this.participants.clear();
+        this.addParticipantRow();
+
+        this.showAddParticipantModal = true;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('❌ Erro ao carregar membros:', error);
+        this.errorMessage = error.message || 'Erro ao carregar membros da igreja';
+        this.isLoadingMembers = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  closeAddParticipantModal(): void {
+    this.showAddParticipantModal = false;
+    this.selectedEventForParticipant = null;
+    this.participants.clear();
+    this.churchMembers = [];
+    this.successMessage = '';
+    this.errorMessage = '';
+  }
+
+  onSubmitAddParticipant(): void {
+    if (this.addParticipantForm.valid && this.selectedEventForParticipant) {
+      this.isSubmitting = true;
+      this.errorMessage = '';
+      this.successMessage = '';
+
+      const eventId = this.selectedEventForParticipant.id;
+      const participantsData = this.participants.value;
+
+      console.log(`📤 Adicionando ${participantsData.length} participante(s):`, participantsData);
+
+      this.eventService.addParticipants({
+        eventId: eventId,
+        participants: participantsData.map((p: any) => ({
+          memberId: p.memberId,
+          role: p.role,
+          registeredAt: new Date().toISOString()
+        }))
+      }).subscribe({
+        next: (response) => {
+          console.log('✅ Todos os participantes adicionados com sucesso:', response);
+          const count = response.count || response.participants?.length || participantsData.length;
+          this.successMessage = `${count} participante${count > 1 ? 's' : ''} adicionado${count > 1 ? 's' : ''} com sucesso!`;
+          this.isSubmitting = false;
+
+          this.loadAllEvents();
+
+          setTimeout(() => {
+            this.closeAddParticipantModal();
+          }, 1500);
+        },
+        error: (error) => {
+          console.error('❌ Erro ao adicionar participantes:', error);
+          this.isSubmitting = false;
+
+          if (error.status === 400) {
+            this.errorMessage = 'Dados inválidos. Verifique os campos.';
+          } else if (error.status === 404) {
+            this.errorMessage = 'Evento ou membro não encontrado.';
+          } else if (error.status === 409) {
+            this.errorMessage = 'Um ou mais participantes já estão cadastrados neste evento.';
+          } else {
+            this.errorMessage = error.message || 'Erro ao adicionar participantes.';
+          }
+        }
+      });
+    } else {
+      this.markFormGroupTouched(this.addParticipantForm);
+    }
+  }
+
+  get memberId() {
+    return this.addParticipantForm.get('memberId');
+  }
+
+  get role() {
+    return this.addParticipantForm.get('role');
+  }
+
+  openDetailsModal(event: Event): void {
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.showDetailsModal = true;
+
+    console.log('🔄 Carregando detalhes do evento:', event.id);
+
+    this.eventService.getEventDetails(event.id).subscribe({
+      next: (eventDetails) => {
+        console.log('✅ Detalhes do evento carregados:', eventDetails);
+        this.selectedEventDetails = eventDetails;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('❌ Erro ao carregar detalhes do evento:', error);
+        this.errorMessage = error.message || 'Erro ao carregar detalhes do evento';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  closeDetailsModal(): void {
+    this.showDetailsModal = false;
+    this.selectedEventDetails = null;
+    this.errorMessage = '';
+    this.successMessage = '';
+  }
+
+  getRoleLabel(role: string): string {
+    const roleMap: { [key: string]: string } = {
+      'PARTICIPANT': 'Participante',
+      'ORGANIZER': 'Organizador',
+      'VOLUNTEER': 'Voluntário',
+      'SPEAKER': 'Palestrante',
+      'COORDINATOR': 'Coordenador'
+    };
+    return roleMap[role] || role;
   }
 }
